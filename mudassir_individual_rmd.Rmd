@@ -43,7 +43,7 @@ Type introductory paragraph.
 
 
 ```{r}
-#First figure (table or graph)
+
 ```
 
 
