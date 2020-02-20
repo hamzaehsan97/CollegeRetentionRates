@@ -1,0 +1,83 @@
+---
+title: "Change the title to one of your choice"
+author: "List all group members"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, fig.height = 4, fig.width = 6 )
+```
+
+
+```{r}
+library(tidyverse) 
+```
+
+
+```{r}
+# read in data 
+Colleges1 <- read.csv("https://ed-public-download.app.cloud.gov/downloads/Most-Recent-Cohorts-Scorecard-Elements.csv")
+Colleges2 <- read.csv("https://ed-public-download.app.cloud.gov/downloads/Most-Recent-Cohorts-Treasury-Elements.csv")
+Colleges3 <- read.csv("https://ed-public-download.app.cloud.gov/downloads/Most-Recent-Cohorts-All-Data-Elements.csv")
+# dimensions should be:
+# Colleges1 7112 by 190
+# Colleges2 7112 by 92
+# Colleges3 7112 by 1978
+#check that this is the case
+```
+
+```{r}
+
+Proj2dataset <- Colleges3 %>% select (INSTNM, STABBR, C200_4, RET_FT4_POOLED, PCTFLOAN, TRANS_4_POOLED, CCUGPROF, CONTROL, CCSIZSET, NPT41_PRIV, NPT42_PRIV, NPT43_PRIV, NPT44_PRIV, NPT45_PRIV, MD_EARN_WNE_P10, SD_EARN_WNE_P10 )
+
+write_csv(Proj2dataset, "Proj2dataset.csv")
+
+
+```
+Type introductory paragraph. 
+
+
+```{r}
+#First figure (table or graph)
+```
+
+
+one or two paragraph discussion of first figure
+
+
+```{r}
+#Second figure (figure or graph)
+```
+
+one or two paragraph discussion of second figure
+
+
+```{r}
+#Third figure (table or graph)
+```
+
+one or two paragraph discussion of third figure
+
+
+
+```{r}
+#Fourth figure (table or graph) - optional
+```
+
+one or two paragraph discussion of fourth figure
+
+
+
+```{r}
+#Fifth figure (table or graph) - optional
+```
+
+one or two paragraph discussion of fifth figure
+
+
+## Appendix 
+
+```{r}
+#Additional figure(s) if desired
+```
