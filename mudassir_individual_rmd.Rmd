@@ -15,7 +15,7 @@ library(tidyverse)
 ```
 
 
-```{r}
+```{r, cache = TRUE}
 # read in data 
 Colleges1 <- read.csv("https://ed-public-download.app.cloud.gov/downloads/Most-Recent-Cohorts-Scorecard-Elements.csv")
 Colleges2 <- read.csv("https://ed-public-download.app.cloud.gov/downloads/Most-Recent-Cohorts-Treasury-Elements.csv")
@@ -29,12 +29,16 @@ Colleges3 <- read.csv("https://ed-public-download.app.cloud.gov/downloads/Most-R
 
 ```{r}
 
-Proj2dataset <- Colleges3 %>% select (INSTNM, STABBR, C200_4, RET_FT4_POOLED, PCTFLOAN, TRANS_4_POOLED, CCUGPROF, CONTROL, CCSIZSET, NPT41_PRIV, NPT42_PRIV, NPT43_PRIV, NPT44_PRIV, NPT45_PRIV, MD_EARN_WNE_P10, SD_EARN_WNE_P10 )
+Colleges <- full_join(x = Colleges1, y = Colleges2)
+Colleges <- full_join(x = Colleges, y = Colleges3)
+
+Proj2dataset <- Colleges %>% select (INSTNM, STABBR, C200_4, RET_FT4_POOLED, PCTFLOAN, TRANS_4_POOLED, CCUGPROF, CONTROL, CCSIZSET, NPT41_PRIV, NPT42_PRIV, NPT43_PRIV, NPT44_PRIV, NPT45_PRIV, MD_EARN_WNE_P10, SD_EARN_WNE_P10 )
 
 write_csv(Proj2dataset, "Proj2dataset.csv")
 
 
 ```
+
 Type introductory paragraph. 
 
 
