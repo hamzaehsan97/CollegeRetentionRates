@@ -35,7 +35,7 @@ Colleges <- full_join(x = Colleges, y = Colleges3)
 Proj2dataset <- Colleges %>% select (INSTNM, STABBR, C200_4, RET_FT4_POOLED, PCTFLOAN, TRANS_4_POOLED, CCUGPROF, CONTROL, CCSIZSET, NPT41_PRIV, NPT42_PRIV, NPT43_PRIV, NPT44_PRIV, NPT45_PRIV, MD_EARN_WNE_P10, SD_EARN_WNE_P10 )
 
 write_csv(Proj2dataset, "Proj2dataset.csv")
-
+data_dictionary <- read.csv("CollegeScorecardDataDictionary.csv")
 
 ```
 
@@ -43,6 +43,39 @@ Type introductory paragraph.
 
 
 ```{r}
+Proj2dataset <- collect(Proj2dataset)
+
+
+Proj2dataset <- Proj2dataset %>% filter(STABBR %in% c("AL", "AK", "AZ", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "AR", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"))
+
+
+Proj2dataset$MD_EARN_WNE_P10 <- as.numeric(as.character(Proj2dataset$MD_EARN_WNE_P10))
+Proj2dataset$SD_EARN_WNE_P10 <- as.numeric(as.character(Proj2dataset$SD_EARN_WNE_P10))
+Proj2dataset$RET_FT4_POOLED <- as.numeric(as.character(Proj2dataset$RET_FT4_POOLED))
+
+Proj2dataset <- Proj2dataset %>% filter(!is.na(MD_EARN_WNE_P10) && MD_EARN_WNE_P10 > 0)
+Proj2dataset <- Proj2dataset %>% filter(!is.na(SD_EARN_WNE_P10) && SD_EARN_WNE_P10 > 0)
+Proj2dataset <- Proj2dataset %>% filter(!is.na(RET_FT4_POOLED) && RET_FT4_POOLED > 0.0)
+
+
+Proj2dataset <- Proj2dataset %>% 
+                    select(MD_EARN_WNE_P10, 
+                          SD_EARN_WNE_P10,
+                          STABBR,
+                          RET_FT4_POOLED)
+
+#with_median <- Proj2dataset %>% group_by(STABBR) %>% summarise(median_median = median(MD_EARN_WNE_P10), median_SD = median(SD_EARN_WNE_P10)) %>%  arrange (median_median, median_SD)
+
+with_median <- Proj2dataset %>%  arrange (desc(MD_EARN_WNE_P10))
+
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+ggplot(with_median, aes(x = STABBR, y = MD_EARN_WNE_P10)) +
+  geom_boxplot(aes(y =  MD_EARN_WNE_P10), fill=cbPalette[2], outlier.shape=NA, coef=0) +
+  scale_x_discrete(limits=unique(with_median$STABBR)) +
+  guides(fill=FALSE) +
+  coord_flip(ylim=c(20000,60000))
+
 
 ```
 
