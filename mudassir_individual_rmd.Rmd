@@ -12,6 +12,13 @@ knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, fig.height = 4
 
 ```{r}
 library(tidyverse) 
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+library(scales)
+library(forcats)
+library (plyr)
+library(gridExtra)
 ```
 
 
@@ -32,7 +39,7 @@ Colleges3 <- read.csv("https://ed-public-download.app.cloud.gov/downloads/Most-R
 Colleges <- full_join(x = Colleges1, y = Colleges2)
 Colleges <- full_join(x = Colleges, y = Colleges3)
 
-Proj2dataset <- Colleges %>% select (INSTNM, STABBR, C200_4, RET_FT4_POOLED, PCTFLOAN, TRANS_4_POOLED, CCUGPROF, CONTROL, CCSIZSET, NPT41_PRIV, NPT42_PRIV, NPT43_PRIV, NPT44_PRIV, NPT45_PRIV, MD_EARN_WNE_P10, SD_EARN_WNE_P10 )
+Proj2dataset <- Colleges %>% select (INSTNM, STABBR, REGION, C200_4, RET_FT4_POOLED, ADM_RATE_ALL, C150_4, UGDS, PCTFLOAN, TRANS_4_POOLED, CCUGPROF, CONTROL, CCSIZSET, NPT41_PRIV, NPT42_PRIV, NPT43_PRIV, NPT44_PRIV, NPT45_PRIV, MD_EARN_WNE_P10, PCT25_EARN_WNE_P10, PCT75_EARN_WNE_P10, SD_EARN_WNE_P10, AVGFACSAL, INC_PCT_LO, DEP_STAT_PCT_IND, PAR_ED_PCT_1STGEN )
 
 write_csv(Proj2dataset, "Proj2dataset.csv")
 data_dictionary <- read.csv("CollegeScorecardDataDictionary.csv")
@@ -51,55 +58,142 @@ Proj2dataset <- Proj2dataset %>% filter(STABBR %in% c("AL", "AK", "AZ", "CA", "C
 
 Proj2dataset$MD_EARN_WNE_P10 <- as.numeric(as.character(Proj2dataset$MD_EARN_WNE_P10))
 Proj2dataset$SD_EARN_WNE_P10 <- as.numeric(as.character(Proj2dataset$SD_EARN_WNE_P10))
+Proj2dataset$ADM_RATE_ALL <- as.numeric(as.character(Proj2dataset$ADM_RATE_ALL))
 Proj2dataset$RET_FT4_POOLED <- as.numeric(as.character(Proj2dataset$RET_FT4_POOLED))
+Proj2dataset$C150_4 <- as.numeric(as.character(Proj2dataset$C150_4))
+Proj2dataset$AVGFACSAL <- as.numeric(as.character(Proj2dataset$AVGFACSAL))
+Proj2dataset$PCT25_EARN_WNE_P10 <- as.numeric(as.character(Proj2dataset$PCT25_EARN_WNE_P10))
+Proj2dataset$PCT75_EARN_WNE_P10 <- as.numeric(as.character(Proj2dataset$PCT75_EARN_WNE_P10))
+Proj2dataset$INC_PCT_LO <- as.numeric((as.character(Proj2dataset$INC_PCT_LO)))
+Proj2dataset$PAR_ED_PCT_1STGEN <- as.numeric((as.character(Proj2dataset$PAR_ED_PCT_1STGEN)))
+Proj2dataset$DEP_STAT_PCT_IND <- as.numeric((as.character(Proj2dataset$DEP_STAT_PCT_IND)))
 
-Proj2dataset <- Proj2dataset %>% filter(!is.na(MD_EARN_WNE_P10) && MD_EARN_WNE_P10 > 0)
+
+Proj2dataset <- Proj2dataset %>% filter(!is.na(MD_EARN_WNE_P10) && MD_EARN_WNE_P10 > 0 && !is.null(MD_EARN_WNE_P10))
+Proj2dataset%>%filter(!is.na(PAR_ED_PCT_1STGEN) && !is.null(PAR_ED_PCT_1STGEN))
+Proj2dataset%>%filter(!is.na(DEP_STAT_PCT_IND) && !is.null(DEP_STAT_PCT_IND))
+Proj2dataset%>%filter(!is.na(INC_PCT_LO) && !is.null(INC_PCT_LO))
 Proj2dataset <- Proj2dataset %>% filter(!is.na(SD_EARN_WNE_P10) && SD_EARN_WNE_P10 > 0)
 Proj2dataset <- Proj2dataset %>% filter(!is.na(RET_FT4_POOLED) && RET_FT4_POOLED > 0.0)
+Proj2dataset <- Proj2dataset %>% filter(!is.na(PCT25_EARN_WNE_P10) && PCT25_EARN_WNE_P10 > 0.0)
+Proj2dataset <- Proj2dataset %>% filter(!is.na(PCT75_EARN_WNE_P10) && PCT75_EARN_WNE_P10 > 0.0)
+
+# Establish CONTROL and REGION variables as discrete category
+Proj2dataset$CONTROL <- factor(Proj2dataset$CONTROL, ordered=TRUE)
+Proj2dataset$REGION <- factor(Proj2dataset$REGION, ordered=TRUE)
 
 
-Proj2dataset <- Proj2dataset %>% 
-                    select(MD_EARN_WNE_P10, 
-                          SD_EARN_WNE_P10,
-                          STABBR,
-                          RET_FT4_POOLED)
 
-#with_median <- Proj2dataset %>% group_by(STABBR) %>% summarise(median_median = median(MD_EARN_WNE_P10), median_SD = median(SD_EARN_WNE_P10)) %>%  arrange (median_median, median_SD)
+# Change our values for CONTROL to those given in the data dictionary
+Proj2dataset$CONTROL <- revalue(Proj2dataset$CONTROL, c("1"="Public", 
+                                              "2"="Private Non-Profit", 
+                                              "3"="Private For-Profit"))
+# Change our values for REGION to those given in the data dictionary
+Proj2dataset$REGION <- revalue(Proj2dataset$REGION, c("0"="US Service Schools", 
+                                              "1"="New England", 
+                                              "2"="Mid East",
+                                              "3"="Great Lakes",
+                                              "4"="Plains",
+                                              "5"="Southeast",
+                                              "6"="Southwest",
+                                              "7"="Rocky Mountains",
+                                              "8"="Far West", 
+                                              "9"="Outlying Areas"))
 
-with_median <- Proj2dataset %>%  arrange (desc(MD_EARN_WNE_P10))
+# Rename some important variable for better readability
+names(Proj2dataset)[names(Proj2dataset) == 'INSTNM'] <- 'NAME'
+names(Proj2dataset)[names(Proj2dataset) == 'STABBR'] <- 'STATE'
+names(Proj2dataset)[names(Proj2dataset) == 'CONTROL'] <- 'FUNDING_TYPE'
+names(Proj2dataset)[names(Proj2dataset) == 'UGDS'] <- 'UNDERGRAD_ENROLL'
+names(Proj2dataset)[names(Proj2dataset) == 'RET_FT4_POOLED'] <- 'RETENTION'
+names(Proj2dataset)[names(Proj2dataset) == 'C150_4'] <- 'COMPLETION_SIX_YRS'
+names(Proj2dataset)[names(Proj2dataset) == 'AVGFACSAL'] <- 'AVG_FACULTY_SALARY'
+names(Proj2dataset)[names(Proj2dataset) == 'MD_EARN_WNE_P10'] <- 'MEDIAN_EARNINGS'
+names(Proj2dataset)[names(Proj2dataset) == 'PCT25_EARN_WNE_P10'] <- 'P25_EARINGS'
+names(Proj2dataset)[names(Proj2dataset) == 'PCT75_EARN_WNE_P10'] <- 'P75_EARNINGS'
 
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-ggplot(with_median, aes(x = STABBR, y = MD_EARN_WNE_P10)) +
-  geom_boxplot(aes(y =  MD_EARN_WNE_P10), fill=cbPalette[2], outlier.shape=NA, coef=0) +
-  scale_x_discrete(limits=unique(with_median$STABBR)) +
-  guides(fill=FALSE) +
-  coord_flip(ylim=c(20000,60000))
+background <- select(background, PAR_ED_PCT_1STGEN, DEP_STAT_PCT_IND,
+                     INC_PCT_LO, RET_FT4_POOLED, CONTROL, MD_EARN_WNE_P10)
+
+background1 <- select(background, PAR_ED_PCT_1STGEN,  RET_FT4_POOLED, CONTROL)
+background2 <- select(background, DEP_STAT_PCT_IND,  RET_FT4_POOLED, CONTROL)
+background3 <- select(background, INC_PCT_LO,  RET_FT4_POOLED, CONTROL)
+
+background <- na.omit(background)
+background1 <- na.omit(background1)
+background2 <- na.omit(background2)
+background3 <- na.omit(background3)
 
 
 ```
+
+
+
+```{r echo=FALSE, fig.width=8, message=FALSE, warning=FALSE}
+# 
+ggplot(aes(x=RETENTION, y = AVG_FACULTY_SALARY, colour=FUNDING_TYPE),
+       data=subset(Proj2dataset, Proj2dataset$RETENTION > 0)) +
+       geom_jitter(alpha=1) +
+       facet_wrap(~FUNDING_TYPE) +
+       stat_smooth(method = 'lm', col = 'red') +
+       ggtitle('Average Faculty Salary by Retention') + 
+       labs(color = " Institution Control")+
+       xlab("Retention Rate") +
+       ylab("Average Faculty Salary")
+
+```
+
+
 
 
 one or two paragraph discussion of first figure
 
 
-```{r}
-#Second figure (figure or graph)
-```
 
 one or two paragraph discussion of second figure
 
 
-```{r}
-#Third figure (table or graph)
+```{r fig.height = 5, fig.width = 14}
+region_earnings <- Proj2dataset %>% 
+                    select(MEDIAN_EARNINGS, 
+                           P25_EARINGS,
+                           P75_EARNINGS,
+                           REGION,
+                           RETENTION)
+
+with_median <- region_earnings %>% group_by(REGION) %>% 
+  summarise(median_median = median(MEDIAN_EARNINGS))
+
+region_earnings <- mutate(region_earnings, median_median = with_median$median_median)
+
+region_earnings <- region_earnings %>% arrange(median_median)
+
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+region_earnings %>% 
+ggplot(aes(x = REGION, y = MEDIAN_EARNINGS, fill = Proj2dataset$FUNDING_TYPE)) +
+  geom_bar(stat = "identity", position=position_dodge()) + 
+  ggtitle('Future Median Earnings by Region')+
+  labs(color = "Control") +
+  xlab("Region") +
+  ylab("Median Earnings in 10 Years")
+  
+  #scale_x_discrete(limits=unique(region_earnings$REGION)) +
+ # guides(fill=FALSE) +
+  #coord_flip(ylim=c(20000,50000))
 ```
 
 one or two paragraph discussion of third figure
 
 
 
-```{r}
-#Fourth figure (table or graph) - optional
+```{r,message=FALSE,warning=FALSE,results='asis', echo=FALSE}
+
+library(stargazer)
+stargazer(Proj2dataset, type = "html", summary.stat = c("n", "mean", "sd", "min", "median", "max"))
+      
+
 ```
 
 one or two paragraph discussion of fourth figure
@@ -113,8 +207,80 @@ one or two paragraph discussion of fourth figure
 one or two paragraph discussion of fifth figure
 
 
-## Appendix 
+```{r fig.height=4, fig.width=6}
+
+ ggplot(medianEarnings, aes(x=MD_EARN_WNE_P10, y=RET_FT4_POOLED),outlier.size=1) +
+  
+  geom_point(aes(color=as.character(CONTROL))) +
+  
+  ylab("Retention rates") + xlab("Median Earnings 10 Years Post-graduation") +
+  
+  ggtitle("Retention Rates versus the Median Salary 10 Years Post Enrollment") +
+  
+  geom_smooth(color="orange") +
+  
+  coord_cartesian(xlim = c(15000,75000)) + 
+  
+  labs(color="Control")
+  
+
+
+```
+
+
+
+```{r fig.height=4, fig.width=6}
+a <- ggplot(background1, aes(x=PAR_ED_PCT_1STGEN, y=RET_FT4_POOLED)) +
+  
+  geom_rug(aes(color=as.character(CONTROL))) + 
+  
+  geom_point() + 
+  
+  geom_smooth(color="yellow") +xlab("Ratio of First Generation Students in Student-body") +
+  
+  ylab("Retention Rate") + coord_cartesian(xlim = c(0.1,0.6)) + 
+  
+  labs(color="Control")
+
+
+
+
+b <- ggplot(background2, aes(x=DEP_STAT_PCT_IND, y=RET_FT4_POOLED)) +
+  
+  geom_rug(aes(color=as.character(CONTROL))) + 
+  
+  geom_point() +  
+  
+  geom_smooth(color="yellow") +xlab("Ratio of Fiscally Independent Students") +
+  ylab("Retention Rate") + 
+  
+  labs(color="Control")
+
+
+
+c <- ggplot(background3, aes(x=INC_PCT_LO, y=RET_FT4_POOLED)) +
+  
+  geom_rug(aes(color=as.character(CONTROL))) + 
+  
+  geom_point() +
+  
+  geom_smooth(color="yellow") +xlab("Percentage of students coming from low income  families") +
+  
+  ylab("Median Income after 10 years of enrollment") + 
+  
+  labs(color="Control")
+
+grid.arrange(a,b,c)
+
+```
 
 ```{r}
-#Additional figure(s) if desired
+
+background %>% dplyr::group_by(CONTROL) %>% dplyr::summarise(n=n(),meanRet= mean(RET_FT4_POOLED), meanFirstGen = mean(PAR_ED_PCT_1STGEN), meanFiscIndependant= mean(DEP_STAT_PCT_IND), meanLowIncome=mean(INC_PCT_LO))
+
 ```
+
+
+
+## Appendix 
+
