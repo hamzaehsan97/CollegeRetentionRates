@@ -69,7 +69,8 @@ Proj2dataset$PAR_ED_PCT_1STGEN <- as.numeric((as.character(Proj2dataset$PAR_ED_P
 Proj2dataset$DEP_STAT_PCT_IND <- as.numeric((as.character(Proj2dataset$DEP_STAT_PCT_IND)))
 
 
-Proj2dataset <- Proj2dataset %>% filter(!is.na(MD_EARN_WNE_P10) && MD_EARN_WNE_P10 > 0 && !is.null(MD_EARN_WNE_P10))
+
+Proj2dataset <- Proj2dataset %>% filter( !is.na(MD_EARN_WNE_P10) && (MD_EARN_WNE_P10 > 0.0) && (MD_EARN_WNE_P10 < 80000) && !is.null(MD_EARN_WNE_P10))
 Proj2dataset%>%filter(!is.na(PAR_ED_PCT_1STGEN) && !is.null(PAR_ED_PCT_1STGEN))
 Proj2dataset%>%filter(!is.na(DEP_STAT_PCT_IND) && !is.null(DEP_STAT_PCT_IND))
 Proj2dataset%>%filter(!is.na(INC_PCT_LO) && !is.null(INC_PCT_LO))
@@ -89,7 +90,7 @@ Proj2dataset$CONTROL <- revalue(Proj2dataset$CONTROL, c("1"="Public",
                                               "2"="Private Non-Profit", 
                                               "3"="Private For-Profit"))
 # Change our values for REGION to those given in the data dictionary
-Proj2dataset$REGION <- revalue(Proj2dataset$REGION, c("0"="US Service Schools", 
+Proj2dataset$REGION <- revalue(Proj2dataset$REGION, c("0" = "US Service Schools", 
                                               "1"="New England", 
                                               "2"="Mid East",
                                               "3"="Great Lakes",
@@ -103,7 +104,7 @@ Proj2dataset$REGION <- revalue(Proj2dataset$REGION, c("0"="US Service Schools",
 # Rename some important variable for better readability
 names(Proj2dataset)[names(Proj2dataset) == 'INSTNM'] <- 'NAME'
 names(Proj2dataset)[names(Proj2dataset) == 'STABBR'] <- 'STATE'
-names(Proj2dataset)[names(Proj2dataset) == 'CONTROL'] <- 'FUNDING_TYPE'
+names(Proj2dataset)[names(Proj2dataset) == 'CONTROL'] <- 'INSTITUTION_TYPE'
 names(Proj2dataset)[names(Proj2dataset) == 'UGDS'] <- 'UNDERGRAD_ENROLL'
 names(Proj2dataset)[names(Proj2dataset) == 'RET_FT4_POOLED'] <- 'RETENTION'
 names(Proj2dataset)[names(Proj2dataset) == 'C150_4'] <- 'COMPLETION_SIX_YRS'
@@ -113,12 +114,32 @@ names(Proj2dataset)[names(Proj2dataset) == 'PCT25_EARN_WNE_P10'] <- 'P25_EARINGS
 names(Proj2dataset)[names(Proj2dataset) == 'PCT75_EARN_WNE_P10'] <- 'P75_EARNINGS'
 
 
-background <- select(background, PAR_ED_PCT_1STGEN, DEP_STAT_PCT_IND,
-                     INC_PCT_LO, RET_FT4_POOLED, CONTROL, MD_EARN_WNE_P10)
+region_earnings <- Proj2dataset %>% 
+                    select(MEDIAN_EARNINGS, 
+                           P25_EARINGS,
+                           P75_EARNINGS,
+                           REGION,
+                           RETENTION, 
+                           INSTITUTION_TYPE) 
+  
 
-background1 <- select(background, PAR_ED_PCT_1STGEN,  RET_FT4_POOLED, CONTROL)
-background2 <- select(background, DEP_STAT_PCT_IND,  RET_FT4_POOLED, CONTROL)
-background3 <- select(background, INC_PCT_LO,  RET_FT4_POOLED, CONTROL)
+with_median <- region_earnings %>% group_by(REGION) %>% 
+  summarise(median_med = median(MEDIAN_EARNINGS))
+head(with_median)
+
+#region_earnings <- mutate(region_earnings, median_median = with_median$median_median)
+
+#region_earnings <- region_earnings %>% arrange(median_median)
+
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+
+
+background <- select(Proj2dataset, PAR_ED_PCT_1STGEN, DEP_STAT_PCT_IND,
+                     INC_PCT_LO, RETENTION, INSTITUTION_TYPE, MEDIAN_EARNINGS)
+
+background1 <- select(background, PAR_ED_PCT_1STGEN,  RETENTION, INSTITUTION_TYPE)
+background2 <- select(background, DEP_STAT_PCT_IND,  RETENTION, INSTITUTION_TYPE)
+background3 <- select(background, INC_PCT_LO,  RETENTION, INSTITUTION_TYPE)
 
 background <- na.omit(background)
 background1 <- na.omit(background1)
@@ -132,65 +153,51 @@ background3 <- na.omit(background3)
 
 ```{r echo=FALSE, fig.width=8, message=FALSE, warning=FALSE}
 # 
-ggplot(aes(x=RETENTION, y = AVG_FACULTY_SALARY, colour=FUNDING_TYPE),
+ggplot(aes(x=RETENTION, y = AVG_FACULTY_SALARY, colour=INSTITUTION_TYPE),
        data=subset(Proj2dataset, Proj2dataset$RETENTION > 0)) +
        geom_jitter(alpha=1) +
-       facet_wrap(~FUNDING_TYPE) +
+       facet_wrap(~INSTITUTION_TYPE) +
        stat_smooth(method = 'lm', col = 'red') +
        ggtitle('Average Faculty Salary by Retention') + 
-       labs(color = " Institution Control")+
-       xlab("Retention Rate") +
-       ylab("Average Faculty Salary")
+       labs(color = " Institution Type")+
+       xlab("Student Retention Rate") +
+       ylab("Average Faculty Monthly Salary(USD)")
 
 ```
 
 
+The above figure displays the relationship between average faculty monthly salary (USD) and the retention rate of students in US colleges, across different types of institutions. In particular, we have the three main types of institutions that offer higher education: public, private non-profit, and private for-profit. There seems to be a linear relationship in all three graphs. We notice that there is a positive correlation between average faculty salary and the student retention rate in public and private non-profit institutions, while there is a slightly negative correlation between our two variables for private for-profit institutions. This difference in correlation can be expained due to a larger variation in the student retention rates and a smaller variation in the average faculty monthly salary in said institutitions.
+
+For public institutions, there seems to be a stronger correlation than that for private non-profit institutions; this is because there are more outliers in private non-profit institutions as can be seen from the second graph. Since there is a greater variation in faculty salaries in private non-profit institutions than in public institutions, we can say that resources like faculty salaries are more uniformly distributed in public institutions than those in private for-profit institutions. Moreover, since we see a positive correlation between average faculty salaries and student retention rates in colleges(in the first two graphs), this outcome can also mean that colleges that provide higher salaries to faculty may also have the resources to provide better facilities for respective departments. As such, our first two graphs suggest that dropping out of more resourceful institutions presents a relatively higher opportunity cost for students which might explain the higher retention rates in said colleges.
 
 
-one or two paragraph discussion of first figure
-
-
-
-one or two paragraph discussion of second figure
 
 
 ```{r fig.height = 5, fig.width = 14}
-region_earnings <- Proj2dataset %>% 
-                    select(MEDIAN_EARNINGS, 
-                           P25_EARINGS,
-                           P75_EARNINGS,
-                           REGION,
-                           RETENTION)
-
-with_median <- region_earnings %>% group_by(REGION) %>% 
-  summarise(median_median = median(MEDIAN_EARNINGS))
-
-region_earnings <- mutate(region_earnings, median_median = with_median$median_median)
-
-region_earnings <- region_earnings %>% arrange(median_median)
-
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 region_earnings %>% 
-ggplot(aes(x = REGION, y = MEDIAN_EARNINGS, fill = Proj2dataset$FUNDING_TYPE)) +
-  geom_bar(stat = "identity", position=position_dodge()) + 
-  ggtitle('Future Median Earnings by Region')+
-  labs(color = "Control") +
+ggplot(aes(x = REGION, y = MEDIAN_EARNINGS, fill = Proj2dataset$INSTITUTION_TYPE)) +
+  geom_boxplot(position=position_dodge(), outlier.shape = NA, coeff = 0) + 
+  ggtitle('Future Median Earnings by Region') +
+  labs(fill = "Instituion Type") +
   xlab("Region") +
-  ylab("Median Earnings in 10 Years")
+  ylab("Median Earnings after 10 Years") + 
+  ylim(c(10000, 65000)) +
+  xlim(c("New England", "Mid East", "Great Lakes", "Plains", "Southeast", "Southwest", "Rocky Mountains", "Far West"))
+
+
   
-  #scale_x_discrete(limits=unique(region_earnings$REGION)) +
- # guides(fill=FALSE) +
-  #coord_flip(ylim=c(20000,50000))
+
 ```
 
-one or two paragraph discussion of third figure
+The above boxplot displays the distribution of median earnings of alumni 10 years post-graduation across colleges in seven different regions of the U.S., based on type of institution they attended. For this report, we have the three main types of institutions that offer higher education: public, private non-profit, and private for-profit. From the above figure, we can observe that the median of the future median earnings for the graduates of private non-profit institutions is higher in all of the regions except for the Rocky Mountains region.
 
-
+It is not surprising to observe that the median of the median earnings for the graduates of private for-profit institutions is significantly lower than that for the graduates of the other two types of institutions and aligns with the results other figures(i.e. Figure 2). We can also see that unlike public and private non-profit colleges, the income ranges for private for-profit colleges tend to be somewhat consistent throughout regions. This graph shows that financial prospects of students graduating from private for-profit colleges are similar throughout the country so we can assume that if salary beyond graduation is a major incentive for students they will be inclined to either dropout or transfer colleges.
 
 ```{r,message=FALSE,warning=FALSE,results='asis', echo=FALSE}
 
 library(stargazer)
+
 stargazer(Proj2dataset, type = "html", summary.stat = c("n", "mean", "sd", "min", "median", "max"))
       
 
@@ -211,7 +218,7 @@ one or two paragraph discussion of fifth figure
 
  ggplot(medianEarnings, aes(x=MD_EARN_WNE_P10, y=RET_FT4_POOLED),outlier.size=1) +
   
-  geom_point(aes(color=as.character(CONTROL))) +
+  geom_point(aes(color=as.character(INSTITUTION_TYPE))) +
   
   ylab("Retention rates") + xlab("Median Earnings 10 Years Post-graduation") +
   
