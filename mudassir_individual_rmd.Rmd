@@ -1,6 +1,6 @@
 ---
-title: "Change the title to one of your choice"
-author: "List all group members"
+title: "A Study on the Relationship Between Financial Well-being and College Retention"
+author: "Hamza Ehsan and Mudassir Farooq Zaeem"
 output: html_document
 ---
 
