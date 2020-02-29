@@ -1,0 +1,168 @@
+---
+title: "Change the title to one of your choice"
+author: "List all group members"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, fig.height = 4, fig.width = 6 )
+```
+
+
+```{r}
+library(tidyverse) 
+library(plyr)
+library(gridExtra)
+```
+
+
+```{r}
+Colleges1 <- read.csv("https://ed-public-download.app.cloud.gov/downloads/Most-Recent-Cohorts-Scorecard-Elements.csv")
+Colleges2 <- read.csv("https://ed-public-download.app.cloud.gov/downloads/Most-Recent-Cohorts-Treasury-Elements.csv")
+Colleges3 <- read.csv("https://ed-public-download.app.cloud.gov/downloads/Most-Recent-Cohorts-All-Data-Elements.csv")
+# dimensions should be:
+# Colleges1 7112 by 190
+# Colleges2 7112 by 92
+# Colleges3 7112 by 1978
+#check that this is the case
+```
+
+```{r}
+Colleges <- full_join(x = Colleges1, y = Colleges2)
+Colleges <- full_join(x = Colleges, y = Colleges3)
+
+Proj2dataset <- Colleges %>% select (INSTNM, STABBR, C200_4, RET_FT4_POOLED, PCTFLOAN, TRANS_4_POOLED, CCUGPROF, CONTROL, CCSIZSET, NPT41_PRIV, NPT42_PRIV, NPT43_PRIV, NPT44_PRIV, NPT45_PRIV, MD_EARN_WNE_P10, SD_EARN_WNE_P10, INC_PCT_LO, DEP_STAT_PCT_IND, PAR_ED_PCT_1STGEN)
+
+# Take RET_FT4 as a character
+Proj2dataset$RET_FT4_POOLED <- as.numeric((as.character(Proj2dataset$RET_FT4_POOLED)))
+
+# RET_FT4 is not NA, RET_FT4 is more than zero, RET_FT4 is not NULL
+cleanData <- Proj2dataset%>%filter(!is.na(RET_FT4_POOLED) && as.numeric(RET_FT4_POOLED>0))
+
+write_csv(Proj2dataset, "Proj2dataset.csv")
+
+Proj2dataset$CONTROL <- factor(Proj2dataset$CONTROL, ordered = TRUE)
+Proj2dataset$CONTROL <- revalue(Proj2dataset$CONTROL, c(
+  "1"="public",
+  "2" = "Private Not-for-profit",
+  "3" = "Private For-profit"
+))
+
+```
+
+
+
+
+
+```{r}
+
+# Take MD_EARN as a character
+Proj2dataset$MD_EARN_WNE_P10 <- as.numeric((as.character(Proj2dataset$MD_EARN_WNE_P10)))
+
+# MD_Earn not NA, MD_EARN more than zero, MD_EARN not NULL
+medianEarnings <- Proj2dataset%>%filter(!is.na(MD_EARN_WNE_P10)&& MD_EARN_WNE_P10>0 &&!is.null(MD_EARN_WNE_P10))
+
+```
+
+
+```{r fig.height=4, fig.width=6}
+
+ ggplot(medianEarnings, aes(x=MD_EARN_WNE_P10, y=RET_FT4_POOLED),outlier.size=1) +
+  
+  geom_point(aes(color=as.character(CONTROL))) +
+  
+  ylab("Retention rates") + xlab("Median Earnings 10 Years Post-graduation") +
+  
+  ggtitle("Retention Rates versus the Median Salary 10 Years Post Enrollment") +
+  
+  geom_smooth(color="orange") +
+  
+  coord_cartesian(xlim = c(15000,75000)) + 
+  
+  labs(color="Control")
+  
+
+
+```
+
+
+```{r}
+# Take INC_PCT_LO as a character then as a numeric value
+Proj2dataset$INC_PCT_LO <- as.numeric((as.character(Proj2dataset$INC_PCT_LO)))
+
+
+# Take PAR_ED_PCT_1STGEN as a character then as a numeric value
+Proj2dataset$PAR_ED_PCT_1STGEN <- as.numeric((as.character(Proj2dataset$PAR_ED_PCT_1STGEN)))
+
+# Take DEP_STAT_PCT_IND as a character then as a numeric value
+Proj2dataset$DEP_STAT_PCT_IND <- as.numeric((as.character(Proj2dataset$DEP_STAT_PCT_IND)))
+
+# Create new dataset with non-na, non-null background variables
+background <- Proj2dataset%>%filter(!is.na(PAR_ED_PCT_1STGEN) && !is.null(PAR_ED_PCT_1STGEN) && !is.na(DEP_STAT_PCT_IND) && !is.null(DEP_STAT_PCT_IND) && !is.na(INC_PCT_LO) && !is.null(INC_PCT_LO))
+
+background <- select(background, PAR_ED_PCT_1STGEN, DEP_STAT_PCT_IND,
+                     INC_PCT_LO, RET_FT4_POOLED, CONTROL, MD_EARN_WNE_P10)
+background1 <- select(background, PAR_ED_PCT_1STGEN,  RET_FT4_POOLED, CONTROL)
+background2 <- select(background, DEP_STAT_PCT_IND,  RET_FT4_POOLED, CONTROL)
+background3 <- select(background, INC_PCT_LO,  RET_FT4_POOLED, CONTROL)
+
+background <- na.omit(background)
+background1 <- na.omit(background1)
+background2 <- na.omit(background2)
+background3 <- na.omit(background3)
+```
+
+
+```{r fig.height=4, fig.width=6}
+
+
+
+a <- ggplot(background1, aes(x=PAR_ED_PCT_1STGEN, y=RET_FT4_POOLED)) +
+  
+  geom_rug(aes(color=as.character(CONTROL))) + 
+  
+  geom_point() + 
+  
+  geom_smooth(color="yellow") +xlab("Ratio of First Generation Students in Student-body") +
+  
+  ylab("Retention Rate") + coord_cartesian(xlim = c(0.1,0.6)) + 
+  
+  labs(color="Control")
+
+
+
+
+b <- ggplot(background2, aes(x=DEP_STAT_PCT_IND, y=RET_FT4_POOLED)) +
+  
+  geom_rug(aes(color=as.character(CONTROL))) + 
+  
+  geom_point() +  
+  
+  geom_smooth(color="yellow") +xlab("Ratio of Fiscally Independent Students") +
+  ylab("Retention Rate") + 
+  
+  labs(color="Control")
+
+
+
+c <- ggplot(background3, aes(x=INC_PCT_LO, y=RET_FT4_POOLED)) +
+  
+  geom_rug(aes(color=as.character(CONTROL))) + 
+  
+  geom_point() +
+  
+  geom_smooth(color="yellow") +xlab("Percentage of students coming from low income  families") +
+  
+  ylab("Median Income after 10 years of enrollment") + 
+  
+  labs(color="Control")
+
+grid.arrange(a,b,c)
+```
+
+```{r}
+
+background %>% dplyr::group_by(CONTROL) %>% dplyr::summarise(n=n(),meanRet= mean(RET_FT4_POOLED), meanFirstGen = mean(PAR_ED_PCT_1STGEN), meanFiscIndependant= mean(DEP_STAT_PCT_IND), meanLowIncome=mean(INC_PCT_LO))
+```
+
