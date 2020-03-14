@@ -46,10 +46,12 @@ data_dictionary <- read.csv("CollegeScorecardDataDictionary.csv")
 
 ```
 
-Type introductory paragraph. 
+## Abstract: 
+
+Retention rates in higher education institutions, especially those in the United States, have been a point of contention as of late. In this report we tried to study the effects of financial background, the promise of financial prosperity post-graduation and the financial conditions of the institutions on student retention rates. We studied retention rates through scatterplots sectioned into types of institutions which helped us segment categories of students most vulnerable to drop out and their strong inclination to enroll private for-profit colleges. We found that strong financial background of students, the financial strength of the institution and higher median incomes post-graduation have a strong positive correlation with retention rates.
 
 
-```{r}
+```{r, include=FALSE}
 Proj2dataset <- collect(Proj2dataset)
 
 
@@ -70,7 +72,7 @@ Proj2dataset$DEP_STAT_PCT_IND <- as.numeric((as.character(Proj2dataset$DEP_STAT_
 
 
 
-Proj2dataset <- Proj2dataset %>% filter( !is.na(MD_EARN_WNE_P10) && (MD_EARN_WNE_P10 > 0.0) && (MD_EARN_WNE_P10 < 80000) && !is.null(MD_EARN_WNE_P10))
+Proj2dataset <- Proj2dataset %>% filter( !is.na(MD_EARN_WNE_P10) && (MD_EARN_WNE_P10 > 0.0) && (MD_EARN_WNE_P10 < 90000) && !is.null(MD_EARN_WNE_P10))
 Proj2dataset%>%filter(!is.na(PAR_ED_PCT_1STGEN) && !is.null(PAR_ED_PCT_1STGEN))
 Proj2dataset%>%filter(!is.na(DEP_STAT_PCT_IND) && !is.null(DEP_STAT_PCT_IND))
 Proj2dataset%>%filter(!is.na(INC_PCT_LO) && !is.null(INC_PCT_LO))
@@ -110,36 +112,39 @@ names(Proj2dataset)[names(Proj2dataset) == 'RET_FT4_POOLED'] <- 'RETENTION'
 names(Proj2dataset)[names(Proj2dataset) == 'C150_4'] <- 'COMPLETION_SIX_YRS'
 names(Proj2dataset)[names(Proj2dataset) == 'AVGFACSAL'] <- 'AVG_FACULTY_SALARY'
 names(Proj2dataset)[names(Proj2dataset) == 'MD_EARN_WNE_P10'] <- 'MEDIAN_EARNINGS'
-names(Proj2dataset)[names(Proj2dataset) == 'PCT25_EARN_WNE_P10'] <- 'P25_EARINGS'
-names(Proj2dataset)[names(Proj2dataset) == 'PCT75_EARN_WNE_P10'] <- 'P75_EARNINGS'
+names(Proj2dataset)[names(Proj2dataset) == 'DEP_STAT_PCT_IND'] <- 'FINANC_INDEP'
+names(Proj2dataset)[names(Proj2dataset) == 'INC_PCT_LO'] <- 'LOW_INCOME'
+names(Proj2dataset)[names(Proj2dataset) == 'PAR_ED_PCT_1STGEN'] <- 'FIRST_GEN'
+
+#names(Proj2dataset)[names(Proj2dataset) == 'PCT25_EARN_WNE_P10'] <- 'P25_EARINGS'
+#names(Proj2dataset)[names(Proj2dataset) == 'PCT75_EARN_WNE_P10'] <- 'P75_EARNINGS'
+
 
 
 region_earnings <- Proj2dataset %>% 
-                    select(MEDIAN_EARNINGS, 
-                           P25_EARINGS,
-                           P75_EARNINGS,
+                    select(MEDIAN_EARNINGS,
                            REGION,
                            RETENTION, 
                            INSTITUTION_TYPE) 
   
 
-with_median <- region_earnings %>% group_by(REGION) %>% 
-  summarise(median_med = median(MEDIAN_EARNINGS))
-head(with_median)
+#with_median <- region_earnings %>% group_by(REGION) %>% 
+ # summarise(median_med = median(MEDIAN_EARNINGS))
+#head(with_median)
 
 #region_earnings <- mutate(region_earnings, median_median = with_median$median_median)
 
 #region_earnings <- region_earnings %>% arrange(median_median)
 
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+#cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 
-background <- select(Proj2dataset, PAR_ED_PCT_1STGEN, DEP_STAT_PCT_IND,
-                     INC_PCT_LO, RETENTION, INSTITUTION_TYPE, MEDIAN_EARNINGS)
+background <- select(Proj2dataset, FIRST_GEN, FINANC_INDEP,
+                     LOW_INCOME, RETENTION, INSTITUTION_TYPE, MEDIAN_EARNINGS)
 
-background1 <- select(background, PAR_ED_PCT_1STGEN,  RETENTION, INSTITUTION_TYPE)
-background2 <- select(background, DEP_STAT_PCT_IND,  RETENTION, INSTITUTION_TYPE)
-background3 <- select(background, INC_PCT_LO,  RETENTION, INSTITUTION_TYPE)
+background1 <- select(background, FIRST_GEN,  RETENTION, INSTITUTION_TYPE)
+background2 <- select(background, FINANC_INDEP,  RETENTION, INSTITUTION_TYPE)
+background3 <- select(background, LOW_INCOME,  RETENTION, INSTITUTION_TYPE)
 
 background <- na.omit(background)
 background1 <- na.omit(background1)
@@ -151,6 +156,34 @@ background3 <- na.omit(background3)
 
 
 
+```{r,message=FALSE,warning=FALSE,results='asis', echo=FALSE}
+
+library(stargazer)
+
+Proj2dataset2 <- Proj2dataset %>% 
+                                        select(RETENTION,
+                                         AVG_FACULTY_SALARY,
+                                         MEDIAN_EARNINGS,
+                                         LOW_INCOME,
+                                         FIRST_GEN,
+                                         FINANC_INDEP
+                                         )
+stargazer(Proj2dataset2, type = "html", title = "Figure 1: Summary Statistics Table ", summary.stat = c("n", "mean", "sd", "min", "median", "max"))
+      
+
+```
+
+
+
+
+
+The figure above is a summary statistics table for all the numeric variables that we used in our data analysis. As we can observe from the table the number of variables is different due to a couple of reasons. Firstly, we had to wrangle a lot of the variables. For instance, we had to remove all of the observations for which the variable was either null or returning an NA value. Secondly, a lot of the institutions do not provide the data regarding their student retention rates, which is why the number of observations for that variable is significantly fewer than the ones for other variables in the table. (See the table in Appendix for more details).
+
+Moreover, we observe the mean and median values for all of these variables are similar, which makes sense from a statistical point of view. Lastly, it is interesting to see the minimum and maximum values for some of the variables. For example, the minimum value in the dataset for the retention rates is 0.000, meaning that all of the students either transferred or dropped or out from one year to the next. We are curious as to what goes on in colleges who reported these values. The maximum value for the median earnings after 10 years of graduation, as another example, is 250000 USD, which is quite above the national median. This is why wrangled with our data to plot the third and fourth figures in order to deal with such outliers.
+
+
+
+
 ```{r echo=FALSE, fig.width=8, message=FALSE, warning=FALSE}
 # 
 ggplot(aes(x=RETENTION, y = AVG_FACULTY_SALARY, colour=INSTITUTION_TYPE),
@@ -158,7 +191,7 @@ ggplot(aes(x=RETENTION, y = AVG_FACULTY_SALARY, colour=INSTITUTION_TYPE),
        geom_jitter(alpha=1) +
        facet_wrap(~INSTITUTION_TYPE) +
        stat_smooth(method = 'lm', col = 'red') +
-       ggtitle('Average Faculty Salary by Retention') + 
+       ggtitle(' Figure 2: Average Faculty Salary by Retention') + 
        labs(color = " Institution Type")+
        xlab("Student Retention Rate") +
        ylab("Average Faculty Monthly Salary(USD)")
@@ -171,6 +204,32 @@ The above figure displays the relationship between average faculty monthly salar
 For public institutions, there seems to be a stronger correlation than that for private non-profit institutions; this is because there are more outliers in private non-profit institutions as can be seen from the second graph. Since there is a greater variation in faculty salaries in private non-profit institutions than in public institutions, we can say that resources like faculty salaries are more uniformly distributed in public institutions than those in private for-profit institutions. Moreover, since we see a positive correlation between average faculty salaries and student retention rates in colleges(in the first two graphs), this outcome can also mean that colleges that provide higher salaries to faculty may also have the resources to provide better facilities for respective departments. As such, our first two graphs suggest that dropping out of more resourceful institutions presents a relatively higher opportunity cost for students which might explain the higher retention rates in said colleges.
 
 
+```{r fig.height=4, fig.width=6}
+
+ ggplot(Proj2dataset, aes(x=MEDIAN_EARNINGS, y=RETENTION),outlier.size=1) +
+  
+  geom_point(aes(color=as.character(INSTITUTION_TYPE))) +
+  
+  ylab("Student Retention Rate") + xlab("Median Earnings 10 Years Post-graduation") +
+  
+  ggtitle(" Figure 3: Retention Rates vs.  Median Earnings 10 Years Post-graduation") +
+  
+  geom_smooth(color="orange") +
+  
+  coord_cartesian(xlim = c(15000,75000)) + 
+  
+  labs(color="Institution Type")
+  
+
+
+```
+
+
+The above boxplot displays the distribution of median earnings of alumni 10 years post-graduation across colleges in seven different regions of the U.S., based on type of institution they attended. For this report, we have the three main types of institutions that offer higher education: public, private non-profit, and private for-profit. From the above figure, we can observe that the median of the future median earnings for the graduates of private non-profit institutions is higher in all of the regions except for the Rocky Mountains region.
+
+ 
+
+It is not surprising to observe that the median of the median earnings for the graduates of private for-profit institutions is significantly lower than that for the graduates of the other two types of institutions and aligns with the results other figures(i.e. Figure 2). We can also see that unlike public and private non-profit colleges, the income ranges for private for-profit colleges tend to be somewhat consistent throughout regions. This graph shows that financial prospects of students graduating from private for-profit colleges are similar throughout the country so we can assume that if salary beyond graduation is a major incentive for students they will be inclined to either dropout or transfer colleges.
 
 
 ```{r fig.height = 5, fig.width = 14}
@@ -178,116 +237,93 @@ For public institutions, there seems to be a stronger correlation than that for 
 region_earnings %>% 
 ggplot(aes(x = REGION, y = MEDIAN_EARNINGS, fill = Proj2dataset$INSTITUTION_TYPE)) +
   geom_boxplot(position=position_dodge(), outlier.shape = NA, coeff = 0) + 
-  ggtitle('Future Median Earnings by Region') +
+  ggtitle('Figure 4: Future Median Earnings by Region') +
   labs(fill = "Instituion Type") +
   xlab("Region") +
-  ylab("Median Earnings after 10 Years") + 
+  ylab("Median Earnings 10 Years Post-graduation") + 
   ylim(c(10000, 65000)) +
   xlim(c("New England", "Mid East", "Great Lakes", "Plains", "Southeast", "Southwest", "Rocky Mountains", "Far West"))
 
 
   
-
 ```
 
-The above boxplot displays the distribution of median earnings of alumni 10 years post-graduation across colleges in seven different regions of the U.S., based on type of institution they attended. For this report, we have the three main types of institutions that offer higher education: public, private non-profit, and private for-profit. From the above figure, we can observe that the median of the future median earnings for the graduates of private non-profit institutions is higher in all of the regions except for the Rocky Mountains region.
+The above boxplot displays the distribution of median earnings of alumni 10 years post-graduation across colleges in seven different regions of the U.S., based on the type of institution they attended. For this report, we have the three main types of institutions that offer higher education: public, private non-profit, and private for-profit. From the above figure, we can observe that the median of the future median earnings for the graduates of private non-profit institutions is higher in all of the regions except for the Rocky Mountains region.
 
-It is not surprising to observe that the median of the median earnings for the graduates of private for-profit institutions is significantly lower than that for the graduates of the other two types of institutions and aligns with the results other figures(i.e. Figure 2). We can also see that unlike public and private non-profit colleges, the income ranges for private for-profit colleges tend to be somewhat consistent throughout regions. This graph shows that financial prospects of students graduating from private for-profit colleges are similar throughout the country so we can assume that if salary beyond graduation is a major incentive for students they will be inclined to either dropout or transfer colleges.
-
-```{r,message=FALSE,warning=FALSE,results='asis', echo=FALSE}
-
-library(stargazer)
-
-stargazer(Proj2dataset, type = "html", summary.stat = c("n", "mean", "sd", "min", "median", "max"))
-      
-
-```
-
-one or two paragraph discussion of fourth figure
+It is not surprising to observe that the median of the median earnings for the graduates of private for-profit institutions is significantly lower than that for the graduates of the other two types of institutions and aligns with the results other figures(i.e. Figure 2). We can also see that unlike public and private non-profit colleges, the income ranges for private for-profit colleges tend to be somewhat consistent throughout regions. This graph shows that financial prospects of students graduating from private for-profit colleges are similar throughout the country so we can assume that if salary beyond graduation is a major incentive for students to stay enrolled at a college, they will be inclined to either drop out or transfer colleges.
 
 
 
-```{r}
-#Fifth figure (table or graph) - optional
-```
-
-one or two paragraph discussion of fifth figure
-
-
-```{r fig.height=4, fig.width=6}
-
- ggplot(medianEarnings, aes(x=MD_EARN_WNE_P10, y=RET_FT4_POOLED),outlier.size=1) +
+```{r fig.height=8, fig.width=6}
+a <- ggplot(background1, aes(x=FIRST_GEN, y=RETENTION)) +
   
-  geom_point(aes(color=as.character(INSTITUTION_TYPE))) +
-  
-  ylab("Retention rates") + xlab("Median Earnings 10 Years Post-graduation") +
-  
-  ggtitle("Retention Rates versus the Median Salary 10 Years Post Enrollment") +
-  
-  geom_smooth(color="orange") +
-  
-  coord_cartesian(xlim = c(15000,75000)) + 
-  
-  labs(color="Control")
-  
-
-
-```
-
-
-
-```{r fig.height=4, fig.width=6}
-a <- ggplot(background1, aes(x=PAR_ED_PCT_1STGEN, y=RET_FT4_POOLED)) +
-  
-  geom_rug(aes(color=as.character(CONTROL))) + 
+  geom_rug(aes(color=as.character(INSTITUTION_TYPE))) + 
   
   geom_point() + 
   
-  geom_smooth(color="yellow") +xlab("Ratio of First Generation Students in Student-body") +
+  stat_smooth(method = 'lm' ,color="yellow") +xlab("Ratio of First Generation Students in Student-body") +
   
-  ylab("Retention Rate") + coord_cartesian(xlim = c(0.1,0.6)) + 
+  ggtitle('Figure 5.1: Retention Rates vs. Ratio of First Generation Students') +
   
-  labs(color="Control")
-
-
-
-
-b <- ggplot(background2, aes(x=DEP_STAT_PCT_IND, y=RET_FT4_POOLED)) +
+  ylab("Student Retention Rate") + coord_cartesian(xlim = c(0.1,0.6)) + 
   
-  geom_rug(aes(color=as.character(CONTROL))) + 
+  labs(color="Institution Type")
+
+
+
+
+b <- ggplot(background2, aes(x=FINANC_INDEP, y=RETENTION)) +
+  
+  geom_rug(aes(color=as.character(INSTITUTION_TYPE))) + 
   
   geom_point() +  
   
-  geom_smooth(color="yellow") +xlab("Ratio of Fiscally Independent Students") +
-  ylab("Retention Rate") + 
+  stat_smooth(method = 'lm', color="yellow") +xlab("Ratio of Fiscally Independent Students in Student-body") +
   
-  labs(color="Control")
-
-
-
-c <- ggplot(background3, aes(x=INC_PCT_LO, y=RET_FT4_POOLED)) +
+  ggtitle('Figure 5.2: Retention Rates vs. Ratio of Fiscally Independent Students') +
   
-  geom_rug(aes(color=as.character(CONTROL))) + 
+  ylab("Student Retention Rate") + 
+  
+  labs(color="Institution Type")
+
+
+
+c <- ggplot(background3, aes(x=LOW_INCOME, y=RETENTION)) +
+  
+  geom_rug(aes(color=as.character(INSTITUTION_TYPE))) + 
   
   geom_point() +
   
-  geom_smooth(color="yellow") +xlab("Percentage of students coming from low income  families") +
+  stat_smooth(method = 'lm', color="yellow") +xlab("Percentage of students coming from low income families in Student-body") +
   
-  ylab("Median Income after 10 years of enrollment") + 
+  ggtitle('Figure 5.3: Retention Rates vs. Percentage of Students with Low-Income Families') +
   
-  labs(color="Control")
+  ylab("Student Retention Rate") + 
+  
+  labs(color="Institution Type")
 
 grid.arrange(a,b,c)
 
 ```
 
-```{r}
 
-background %>% dplyr::group_by(CONTROL) %>% dplyr::summarise(n=n(),meanRet= mean(RET_FT4_POOLED), meanFirstGen = mean(PAR_ED_PCT_1STGEN), meanFiscIndependant= mean(DEP_STAT_PCT_IND), meanLowIncome=mean(INC_PCT_LO))
+The graph above illustrates the median earnings 10 years post-graduation against the retention rates in colleges, across different types of institutions. It can be seen that in colleges where the median income post-graduation is above 30,000(USD) there is a strong, positive and linear correlation between alumni income and the retention rates of their alma maters. The trend seems to be most prevalent amongst colleges that have alumni earning between 30,000(USD) and 55,000(USD). The correlation coefficient tends to even out amongst colleges where graduates make more than 50,000(USD) annually. We see a higher variance in results in colleges with graduates earning less than 25,000(USD), with a negative correlation which is probably due to outliers and lack of data-points in this region. We can also see lower retention rates and earnings amongst private for-profit colleges displayed by red points on the graph.
 
-```
+ 
+
+In colleges where graduates tend to have higher incomes post-graduation, we can see that retention rates are also higher. We can assume that the hope of having a higher income post-graduation is a lucrative incentive for students to stay enrolled in college. Since the average income of people with no college degrees in the United States is about 30,000(USD), we can assume that students may not find much value in colleges where graduates tend to make about 30,000(USD) which can help explain the lower retention rates in said colleges.
+
+
+
+
 
 
 
 ## Appendix 
+```{r}
 
+background %>% dplyr::group_by(INSTITUTION_TYPE) %>% dplyr::summarise(n=n(),meanRet= mean(RETENTION), meanFirstGen = mean(FIRST_GEN), meanFiscIndependant= mean(FINANC_INDEP), meanLowIncome=mean(LOW_INCOME))
+
+```
+
+As we can observe from the above table, the number of observation for private for-profit institutions are much less than those for private non-profit and public institutions. This might confirm the suspicion that private for-profit institutions are known to either hide or not provide a lot of the data and statistics regarding higher education.
