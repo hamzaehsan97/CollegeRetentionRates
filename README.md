@@ -11,7 +11,7 @@ To deploy the program on a local machine the following hardware/softwares are re
 #### RStudio
 
 
-To download required libraries, navigate to the project directory in terminal and type in the command below.
+The following libraries are required to recreate this app. You can download these libraries in Rstudio through Tools or through the command line using 'install.packages("Package Name")'
 
 ```
 library(tidyverse) 
