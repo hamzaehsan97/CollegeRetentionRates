@@ -2,6 +2,8 @@
 
 This repository includes a data science project to study patterns for retention rates in 4-year colleges in USA.
 
+## Results
+https://hamzaehsan97.github.io/CollegeRetentionRates/
 
 ### Prerequisites
 
@@ -30,8 +32,6 @@ library(gridExtra)
 1) Open finalReport.rmd in RStudio
 2) knit file to html.
 
-## Results
-https://hamzaehsan97.github.io/CollegeRetentionRates/
 
 ## Built With
 
